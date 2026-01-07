@@ -9,6 +9,11 @@ struct ProfileView: View {
     @EnvironmentObject var viewModel: AppViewModel
     @State private var showDeleteAlert = false
     @State private var showFeedbackHistory = false
+    @State private var showProgressStats = false
+    @State private var showNotifications = false
+    @State private var showAppearance = false
+    @State private var showHelpSupport = false
+    @State private var showAbout = false
     
     var body: some View {
         NavigationView {
@@ -89,7 +94,7 @@ struct ProfileView: View {
                 SettingsRow(
                     icon: "chart.bar.fill",
                     title: "Progress & Stats",
-                    action: {}
+                    action: { showProgressStats = true }
                 )
                 
                 SettingsRow(
@@ -101,25 +106,25 @@ struct ProfileView: View {
                 SettingsRow(
                     icon: "bell.fill",
                     title: "Notifications",
-                    action: {}
+                    action: { showNotifications = true }
                 )
                 
                 SettingsRow(
                     icon: "paintbrush.fill",
                     title: "Appearance",
-                    action: {}
+                    action: { showAppearance = true }
                 )
                 
                 SettingsRow(
                     icon: "questionmark.circle.fill",
                     title: "Help & Support",
-                    action: {}
+                    action: { showHelpSupport = true }
                 )
                 
                 SettingsRow(
                     icon: "info.circle.fill",
                     title: "About EduSphere",
-                    action: {}
+                    action: { showAbout = true }
                 )
                 
                 Button(action: { showDeleteAlert = true }) {
@@ -152,6 +157,22 @@ struct ProfileView: View {
         .sheet(isPresented: $showFeedbackHistory) {
             FeedbackHistoryView()
                 .environmentObject(viewModel)
+        }
+        .sheet(isPresented: $showProgressStats) {
+            ProgressStatsView()
+                .environmentObject(viewModel)
+        }
+        .sheet(isPresented: $showNotifications) {
+            NotificationsView()
+        }
+        .sheet(isPresented: $showAppearance) {
+            AppearanceView()
+        }
+        .sheet(isPresented: $showHelpSupport) {
+            HelpSupportView()
+        }
+        .sheet(isPresented: $showAbout) {
+            AboutView()
         }
     }
     
@@ -337,6 +358,458 @@ struct FeedbackHistoryCard: View {
         formatter.dateStyle = .medium
         formatter.timeStyle = .short
         return formatter.string(from: date)
+    }
+}
+
+// MARK: - Progress & Stats View
+struct ProgressStatsView: View {
+    @EnvironmentObject var viewModel: AppViewModel
+    @Environment(\.presentationMode) var presentationMode
+    
+    var body: some View {
+        NavigationView {
+            ZStack {
+                DesignSystem.backgroundColor
+                    .ignoresSafeArea()
+                
+                ScrollView {
+                    VStack(spacing: 24) {
+                        if let user = viewModel.currentUser {
+                            // Overall Stats
+                            VStack(alignment: .leading, spacing: 16) {
+                                Text("Overall Progress")
+                                    .font(.system(size: 24))
+                                    .foregroundColor(.white)
+                                
+                                VStack(spacing: 12) {
+                                    ProgressStatRow(title: "Total Points", value: "\(user.totalPoints)", icon: "star.fill", color: DesignSystem.primaryColor)
+                                    ProgressStatRow(title: "Current Streak", value: "\(user.currentStreak) days", icon: "flame.fill", color: .orange)
+                                    ProgressStatRow(title: "Lessons Completed", value: "\(user.completedLessons.count)", icon: "book.fill", color: .blue)
+                                    ProgressStatRow(title: "Challenges Completed", value: "\(user.completedChallenges.count)", icon: "trophy.fill", color: .green)
+                                }
+                            }
+                            .padding()
+                            .glassCard()
+                            
+                            // Category Breakdown
+                            VStack(alignment: .leading, spacing: 16) {
+                                Text("Learning Categories")
+                                    .font(.system(size: 24))
+                                    .foregroundColor(.white)
+                                
+                                ForEach(user.interests, id: \.self) { interest in
+                                    CategoryProgressCard(category: interest, viewModel: viewModel)
+                                }
+                            }
+                        }
+                    }
+                    .padding()
+                }
+            }
+            .navigationTitle("Progress & Stats")
+            .navigationBarTitleDisplayMode(.inline)
+            .navigationBarItems(trailing: Button("Done") {
+                presentationMode.wrappedValue.dismiss()
+            })
+        }
+    }
+}
+
+struct ProgressStatRow: View {
+    let title: String
+    let value: String
+    let icon: String
+    let color: Color
+    
+    var body: some View {
+        HStack {
+            Image(systemName: icon)
+                .font(.system(size: 20))
+                .foregroundColor(color)
+                .frame(width: 30)
+            
+            Text(title)
+                .font(.system(size: 16))
+                .foregroundColor(.white)
+            
+            Spacer()
+            
+            Text(value)
+                .font(.system(size: 18))
+                .foregroundColor(color)
+        }
+        .padding()
+        .background(DesignSystem.glassBackground)
+        .cornerRadius(12)
+    }
+}
+
+struct CategoryProgressCard: View {
+    let category: String
+    let viewModel: AppViewModel
+    
+    var lessonsInCategory: Int {
+        viewModel.lessons.filter { $0.category.rawValue == category && $0.isCompleted }.count
+    }
+    
+    var body: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(category)
+                    .font(.system(size: 17))
+                    .foregroundColor(.white)
+                
+                Text("\(lessonsInCategory) lessons completed")
+                    .font(.system(size: 14))
+                    .foregroundColor(.white.opacity(0.7))
+            }
+            
+            Spacer()
+            
+            Image(systemName: "chevron.right")
+                .foregroundColor(.white.opacity(0.3))
+        }
+        .padding()
+        .glassCard()
+    }
+}
+
+// MARK: - Notifications View
+struct NotificationsView: View {
+    @Environment(\.presentationMode) var presentationMode
+    @State private var dailyReminders = true
+    @State private var challengeAlerts = true
+    @State private var achievementNotifications = true
+    @State private var weeklyProgress = false
+    
+    var body: some View {
+        NavigationView {
+            ZStack {
+                DesignSystem.backgroundColor
+                    .ignoresSafeArea()
+                
+                ScrollView {
+                    VStack(spacing: 24) {
+                        VStack(alignment: .leading, spacing: 16) {
+                            Text("Notification Preferences")
+                                .font(.system(size: 24))
+                                .foregroundColor(.white)
+                            
+                            VStack(spacing: 12) {
+                                NotificationToggle(title: "Daily Learning Reminders", subtitle: "Get reminded to study every day", isOn: $dailyReminders)
+                                NotificationToggle(title: "Challenge Alerts", subtitle: "Notifications for new challenges", isOn: $challengeAlerts)
+                                NotificationToggle(title: "Achievement Unlocked", subtitle: "Celebrate your milestones", isOn: $achievementNotifications)
+                                NotificationToggle(title: "Weekly Progress Report", subtitle: "Summary of your weekly progress", isOn: $weeklyProgress)
+                            }
+                        }
+                        .padding()
+                        .glassCard()
+                        
+                        Text("Note: Notification settings are saved locally on your device.")
+                            .font(.system(size: 13))
+                            .foregroundColor(.white.opacity(0.5))
+                            .multilineTextAlignment(.center)
+                    }
+                    .padding()
+                }
+            }
+            .navigationTitle("Notifications")
+            .navigationBarTitleDisplayMode(.inline)
+            .navigationBarItems(trailing: Button("Done") {
+                presentationMode.wrappedValue.dismiss()
+            })
+        }
+    }
+}
+
+struct NotificationToggle: View {
+    let title: String
+    let subtitle: String
+    @Binding var isOn: Bool
+    
+    var body: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.system(size: 16))
+                    .foregroundColor(.white)
+                
+                Text(subtitle)
+                    .font(.system(size: 13))
+                    .foregroundColor(.white.opacity(0.6))
+            }
+            
+            Spacer()
+            
+            Toggle("", isOn: $isOn)
+                .labelsHidden()
+                .tint(DesignSystem.primaryColor)
+        }
+        .padding()
+        .background(DesignSystem.glassBackground)
+        .cornerRadius(12)
+    }
+}
+
+// MARK: - Appearance View
+struct AppearanceView: View {
+    @Environment(\.presentationMode) var presentationMode
+    @State private var selectedTheme = "Dark"
+    let themes = ["Dark", "Light", "System"]
+    
+    var body: some View {
+        NavigationView {
+            ZStack {
+                DesignSystem.backgroundColor
+                    .ignoresSafeArea()
+                
+                ScrollView {
+                    VStack(spacing: 24) {
+                        VStack(alignment: .leading, spacing: 16) {
+                            Text("Theme")
+                                .font(.system(size: 24))
+                                .foregroundColor(.white)
+                            
+                            VStack(spacing: 12) {
+                                ForEach(themes, id: \.self) { theme in
+                                    Button(action: { selectedTheme = theme }) {
+                                        HStack {
+                                            Text(theme)
+                                                .font(.system(size: 17))
+                                                .foregroundColor(.white)
+                                            
+                                            Spacer()
+                                            
+                                            if selectedTheme == theme {
+                                                Image(systemName: "checkmark.circle.fill")
+                                                    .foregroundColor(DesignSystem.primaryColor)
+                                            }
+                                        }
+                                        .padding()
+                                        .background(DesignSystem.glassBackground)
+                                        .cornerRadius(12)
+                                    }
+                                }
+                            }
+                        }
+                        .padding()
+                        .glassCard()
+                        
+                        Text("Currently, EduSphere uses a fixed dark theme with glassmorphism design.")
+                            .font(.system(size: 13))
+                            .foregroundColor(.white.opacity(0.5))
+                            .multilineTextAlignment(.center)
+                    }
+                    .padding()
+                }
+            }
+            .navigationTitle("Appearance")
+            .navigationBarTitleDisplayMode(.inline)
+            .navigationBarItems(trailing: Button("Done") {
+                presentationMode.wrappedValue.dismiss()
+            })
+        }
+    }
+}
+
+// MARK: - Help & Support View
+struct HelpSupportView: View {
+    @Environment(\.presentationMode) var presentationMode
+    
+    var body: some View {
+        NavigationView {
+            ZStack {
+                DesignSystem.backgroundColor
+                    .ignoresSafeArea()
+                
+                ScrollView {
+                    VStack(spacing: 24) {
+                        VStack(alignment: .leading, spacing: 16) {
+                            Text("Frequently Asked Questions")
+                                .font(.system(size: 24))
+                                .foregroundColor(.white)
+                            
+                            VStack(spacing: 12) {
+                                FAQCard(question: "How do I start learning?", answer: "Navigate to the Lessons tab and select a lesson that matches your interests. Each lesson includes interactive content and quizzes.")
+                                
+                                FAQCard(question: "What are challenges?", answer: "Challenges are daily and weekly tasks that help you stay motivated and practice regularly. Complete them to earn bonus points!")
+                                
+                                FAQCard(question: "How does AI Feedback work?", answer: "During interactive lessons, you can submit your practice work and receive personalized AI-generated feedback on your strengths and areas to improve.")
+                                
+                                FAQCard(question: "Can I track my progress?", answer: "Yes! Check the Progress & Stats section in your Profile to see detailed analytics of your learning journey.")
+                            }
+                        }
+                        .padding()
+                        .glassCard()
+                        
+                        VStack(alignment: .leading, spacing: 16) {
+                            Text("Contact Support")
+                                .font(.system(size: 24))
+                                .foregroundColor(.white)
+                            
+                            Text("Need more help? Reach out to us at:")
+                                .font(.system(size: 15))
+                                .foregroundColor(.white.opacity(0.7))
+                            
+                            Text("support@edusphere.com")
+                                .font(.system(size: 17))
+                                .foregroundColor(DesignSystem.primaryColor)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding()
+                        .glassCard()
+                    }
+                    .padding()
+                }
+            }
+            .navigationTitle("Help & Support")
+            .navigationBarTitleDisplayMode(.inline)
+            .navigationBarItems(trailing: Button("Done") {
+                presentationMode.wrappedValue.dismiss()
+            })
+        }
+    }
+}
+
+struct FAQCard: View {
+    let question: String
+    let answer: String
+    @State private var isExpanded = false
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Button(action: { isExpanded.toggle() }) {
+                HStack {
+                    Text(question)
+                        .font(.system(size: 16))
+                        .foregroundColor(.white)
+                        .multilineTextAlignment(.leading)
+                    
+                    Spacer()
+                    
+                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                        .foregroundColor(.white.opacity(0.5))
+                }
+            }
+            
+            if isExpanded {
+                Text(answer)
+                    .font(.system(size: 14))
+                    .foregroundColor(.white.opacity(0.8))
+                    .multilineTextAlignment(.leading)
+            }
+        }
+        .padding()
+        .background(DesignSystem.glassBackground)
+        .cornerRadius(12)
+    }
+}
+
+// MARK: - About View
+struct AboutView: View {
+    @Environment(\.presentationMode) var presentationMode
+    
+    var body: some View {
+        NavigationView {
+            ZStack {
+                DesignSystem.backgroundColor
+                    .ignoresSafeArea()
+                
+                ScrollView {
+                    VStack(spacing: 30) {
+                        // App Icon
+                        Image(systemName: "graduationcap.circle.fill")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 100, height: 100)
+                            .foregroundColor(DesignSystem.primaryColor)
+                        
+                        VStack(spacing: 8) {
+                            Text("EduSphere")
+                                .font(.system(size: 32))
+                                .foregroundColor(.white)
+                            
+                            Text("Version 1.0.0")
+                                .font(.system(size: 15))
+                                .foregroundColor(.white.opacity(0.7))
+                        }
+                        
+                        VStack(alignment: .leading, spacing: 16) {
+                            Text("About")
+                                .font(.system(size: 24))
+                                .foregroundColor(.white)
+                            
+                            Text("EduSphere is your personal learning companion, designed to help you master new languages, skills, and subjects through interactive lessons, AI-powered feedback, and engaging challenges.")
+                                .font(.system(size: 15))
+                                .foregroundColor(.white.opacity(0.8))
+                                .multilineTextAlignment(.leading)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding()
+                        .glassCard()
+                        
+                        VStack(alignment: .leading, spacing: 16) {
+                            Text("Features")
+                                .font(.system(size: 24))
+                                .foregroundColor(.white)
+                            
+                            VStack(alignment: .leading, spacing: 12) {
+                                FeatureRow(icon: "book.fill", title: "Interactive Lessons", description: "Learn at your own pace")
+                                FeatureRow(icon: "trophy.fill", title: "Daily Challenges", description: "Stay motivated with goals")
+                                FeatureRow(icon: "brain.head.profile", title: "AI Feedback", description: "Personalized improvement tips")
+                                FeatureRow(icon: "chart.line.uptrend.xyaxis", title: "Progress Tracking", description: "Monitor your growth")
+                            }
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding()
+                        .glassCard()
+                        
+                        VStack(spacing: 8) {
+                            Text("© 2025 EduSphere")
+                                .font(.system(size: 13))
+                                .foregroundColor(.white.opacity(0.5))
+                            
+                            Text("Made with ♥ for learners worldwide")
+                                .font(.system(size: 13))
+                                .foregroundColor(.white.opacity(0.5))
+                        }
+                    }
+                    .padding()
+                }
+            }
+            .navigationTitle("About EduSphere")
+            .navigationBarTitleDisplayMode(.inline)
+            .navigationBarItems(trailing: Button("Done") {
+                presentationMode.wrappedValue.dismiss()
+            })
+        }
+    }
+}
+
+struct FeatureRow: View {
+    let icon: String
+    let title: String
+    let description: String
+    
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .font(.system(size: 20))
+                .foregroundColor(DesignSystem.primaryColor)
+                .frame(width: 30)
+            
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.system(size: 16))
+                    .foregroundColor(.white)
+                
+                Text(description)
+                    .font(.system(size: 13))
+                    .foregroundColor(.white.opacity(0.6))
+            }
+            
+            Spacer()
+        }
     }
 }
 

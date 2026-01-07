@@ -11,7 +11,6 @@ class UserDefaultsService {
     private let userKey = "currentUser"
     private let lessonsKey = "userLessons"
     private let challengesKey = "userChallenges"
-    private let groupsKey = "userGroups"
     private let feedbackKey = "userFeedback"
     
     private init() {}
@@ -58,20 +57,6 @@ class UserDefaultsService {
         return challenges
     }
     
-    func saveGroups(_ groups: [CollaborationGroup]) {
-        if let encoded = try? JSONEncoder().encode(groups) {
-            UserDefaults.standard.set(encoded, forKey: groupsKey)
-        }
-    }
-    
-    func loadGroups() -> [CollaborationGroup]? {
-        guard let data = UserDefaults.standard.data(forKey: groupsKey),
-              let groups = try? JSONDecoder().decode([CollaborationGroup].self, from: data) else {
-            return nil
-        }
-        return groups
-    }
-    
     func saveFeedback(_ feedback: [AIFeedback]) {
         if let encoded = try? JSONEncoder().encode(feedback) {
             UserDefaults.standard.set(encoded, forKey: feedbackKey)
@@ -90,7 +75,6 @@ class UserDefaultsService {
         UserDefaults.standard.removeObject(forKey: userKey)
         UserDefaults.standard.removeObject(forKey: lessonsKey)
         UserDefaults.standard.removeObject(forKey: challengesKey)
-        UserDefaults.standard.removeObject(forKey: groupsKey)
         UserDefaults.standard.removeObject(forKey: feedbackKey)
         UserDefaults.standard.synchronize()
     }

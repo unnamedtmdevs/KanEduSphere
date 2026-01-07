@@ -24,13 +24,6 @@ struct MainTabView: View {
                 }
                 .environmentObject(viewModel)
             
-            CollaborationView()
-                .tabItem {
-                    Image(systemName: "person.3.fill")
-                    Text("Collaborate")
-                }
-                .environmentObject(viewModel)
-            
             ProfileView()
                 .tabItem {
                     Image(systemName: "person.crop.circle.fill")

@@ -10,8 +10,9 @@ struct DesignSystem {
     static let primaryColor = Color(hex: "#fbd600")
     static let secondaryColor = Color(hex: "#ffffff")
     
-    static let cardBackground = Color.white.opacity(0.1)
-    static let glassBackground = Color.white.opacity(0.05)
+    // Улучшенная непрозрачность для лучшей читаемости
+    static let cardBackground = Color.white.opacity(0.15)
+    static let glassBackground = Color.white.opacity(0.12)
     
     static let cornerRadius: CGFloat = 20
     static let cardPadding: CGFloat = 16
@@ -50,13 +51,17 @@ struct GlassCardModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
             .background(
-                backgroundColor
-                    .blur(radius: 10)
+                ZStack {
+                    // Добавляем полупрозрачный черный фон для лучшего контраста
+                    Color.black.opacity(0.3)
+                    backgroundColor
+                        .blur(radius: 10)
+                }
             )
             .cornerRadius(DesignSystem.cornerRadius)
             .overlay(
                 RoundedRectangle(cornerRadius: DesignSystem.cornerRadius)
-                    .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                    .stroke(Color.white.opacity(0.25), lineWidth: 1.5)
             )
     }
 }

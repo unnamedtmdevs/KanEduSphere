@@ -10,7 +10,6 @@ class AppViewModel: ObservableObject {
     @Published var currentUser: User?
     @Published var lessons: [Lesson] = []
     @Published var challenges: [Challenge] = []
-    @Published var groups: [CollaborationGroup] = []
     @Published var feedbackHistory: [AIFeedback] = []
     @Published var isOnboardingComplete: Bool = false
     
@@ -34,12 +33,6 @@ class AppViewModel: ObservableObject {
             self.challenges = savedChallenges
         } else {
             self.challenges = DataService.shared.getChallenges()
-        }
-        
-        if let savedGroups = UserDefaultsService.shared.loadGroups() {
-            self.groups = savedGroups
-        } else {
-            self.groups = DataService.shared.getCollaborationGroups()
         }
         
         if let savedFeedback = UserDefaultsService.shared.loadFeedback() {
@@ -107,26 +100,6 @@ class AppViewModel: ObservableObject {
         }
     }
     
-    func joinGroup(_ groupId: UUID) {
-        guard let user = currentUser else { return }
-        
-        if let index = groups.firstIndex(where: { $0.id == groupId }) {
-            let member = GroupMember(name: user.name, avatarColor: user.avatarColor)
-            groups[index].members.append(member)
-            UserDefaultsService.shared.saveGroups(groups)
-        }
-    }
-    
-    func sendMessage(to groupId: UUID, content: String) {
-        guard let user = currentUser else { return }
-        
-        if let index = groups.firstIndex(where: { $0.id == groupId }) {
-            let message = GroupMessage(senderId: user.id, senderName: user.name, content: content)
-            groups[index].messages.append(message)
-            UserDefaultsService.shared.saveGroups(groups)
-        }
-    }
-    
     func generateFeedback(for lessonId: UUID, input: String, type: AIFeedback.FeedbackType) {
         let feedback = DataService.shared.generateAIFeedback(for: lessonId, userInput: input, type: type)
         feedbackHistory.append(feedback)
@@ -139,7 +112,6 @@ class AppViewModel: ObservableObject {
         isOnboardingComplete = false
         lessons = DataService.shared.getLessons()
         challenges = DataService.shared.getChallenges()
-        groups = DataService.shared.getCollaborationGroups()
         feedbackHistory = []
     }
 }

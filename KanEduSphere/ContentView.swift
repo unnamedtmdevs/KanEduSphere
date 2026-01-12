@@ -24,16 +24,9 @@ struct ContentView: View {
                 
                 if isBlock == true {
                     
-                    // Наше обычное приложение EduSphere
-                    Group {
-                        if viewModel.isOnboardingComplete {
-                            MainTabView()
-                                .environmentObject(viewModel)
-                        } else {
-                            OnboardingView()
-                                .environmentObject(viewModel)
-                        }
-                    }
+                    // Наше обычное приложение EduSphere - сразу показываем главный экран
+                    MainTabView()
+                        .environmentObject(viewModel)
                     
                 } else if isBlock == false {
                     

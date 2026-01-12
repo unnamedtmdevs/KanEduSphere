@@ -21,6 +21,16 @@ class AppViewModel: ObservableObject {
         if let user = UserDefaultsService.shared.loadUser() {
             self.currentUser = user
             self.isOnboardingComplete = true
+        } else {
+            // Создаем дефолтного пользователя автоматически
+            let defaultUser = User(
+                name: "EduSphere User",
+                email: "user@edusphere.com",
+                interests: ["Languages", "Mathematics", "Science", "Programming"]
+            )
+            self.currentUser = defaultUser
+            self.isOnboardingComplete = true
+            UserDefaultsService.shared.saveUser(defaultUser)
         }
         
         if let savedLessons = UserDefaultsService.shared.loadLessons() {
@@ -38,13 +48,6 @@ class AppViewModel: ObservableObject {
         if let savedFeedback = UserDefaultsService.shared.loadFeedback() {
             self.feedbackHistory = savedFeedback
         }
-    }
-    
-    func completeOnboarding(name: String, email: String, interests: [String]) {
-        let user = User(name: name, email: email, interests: interests)
-        self.currentUser = user
-        self.isOnboardingComplete = true
-        UserDefaultsService.shared.saveUser(user)
     }
     
     func completeLesson(_ lessonId: UUID) {
@@ -108,8 +111,17 @@ class AppViewModel: ObservableObject {
     
     func deleteAccount() {
         UserDefaultsService.shared.resetAllData()
-        currentUser = nil
-        isOnboardingComplete = false
+        
+        // Создаем нового дефолтного пользователя
+        let defaultUser = User(
+            name: "EduSphere User",
+            email: "user@edusphere.com",
+            interests: ["Languages", "Mathematics", "Science", "Programming"]
+        )
+        currentUser = defaultUser
+        isOnboardingComplete = true
+        UserDefaultsService.shared.saveUser(defaultUser)
+        
         lessons = DataService.shared.getLessons()
         challenges = DataService.shared.getChallenges()
         feedbackHistory = []
